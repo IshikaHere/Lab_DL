@@ -1,0 +1,71 @@
+
+Question 13: Provide the complete, commented Python code for the CoreLogisticRegression class.
+
+"""Computes the linear combination of inputs and weights."""
+z = self.theta_0
+for i in range(len(self.theta_weights)):
+z += self.theta_weights[i] * x_sample[i]
+return z
+
+
+def _predict_probability(self, x_sample):
+"""Makes a probability prediction for a single sample."""
+z = self._compute_z(x_sample)
+return self._sigmoid(z)
+
+
+def _compute_cost(self, y_true, y_pred_probs):
+"""Computes the binary cross-entropy (log loss)."""
+m = len(y_true)
+if m == 0: return 0.0
+total_cost, epsilon = 0.0, 1e-9
+for i in range(m):
+h = max(epsilon, min(1.0 - epsilon, y_pred_probs[i])) # Clipping
+cost_sample = -y_true[i] * math.log(h) - (1 - y_true[i]) * math.log(1 - h)
+total_cost += cost_sample
+return total_cost / m
+
+
+def _compute_gradients(self, X_data, y_true, y_pred_probs):
+"""Computes the gradients of the cost function."""
+m, n_features = len(y_true), len(self.theta_weights)
+grad_theta_0 = 0.0
+grad_theta_weights = [0.0] * n_features
+for i in range(m):
+error = y_pred_probs[i] - y_true[i]
+grad_theta_0 += error
+for j in range(n_features):
+grad_theta_weights[j] += error * X_data[i][j]
+grad_theta_0 /= m
+for j in range(n_features): grad_theta_weights[j] /= m
+return grad_theta_0, grad_theta_weights
+
+
+def fit(self, X_data, y_data, verbose=True):
+"""Trains the model using batch gradient descent."""
+n_features = len(X_data[0])
+self.theta_0 = 0.0
+self.theta_weights = [0.0] * n_features
+self.cost_history = []
+for i in range(self.n_iterations):
+y_pred_probs = [self._predict_probability(x) for x in X_data]
+cost = self._compute_cost(y_data, y_pred_probs)
+self.cost_history.append(cost)
+grad_theta_0, grad_theta_weights = self._compute_gradients(X_data, y_data, y_pred_probs)
+self.theta_0 -= self.learning_rate * grad_theta_0
+for j in range(n_features):
+self.theta_weights[j] -= self.learning_rate * grad_theta_weights[j]
+if verbose and i % (self.n_iterations // 10) == 0:
+print(f"Iteration {i}: Cost = {cost:.4f}")
+
+
+
+def predict_proba(self, X_data):
+"""Predicts probabilities for new data."""
+return [self._predict_probability(x) for x in X_data]
+
+
+def predict(self, X_data, threshold=0.5):
+"""Predicts class labels (0 or 1) based on a threshold."""
+probabilities = self.predict_proba(X_data)
+return [1 if prob >= threshold else 0 for prob in probabilities]
